@@ -1,15 +1,14 @@
 [[spring-azure-app]]
 = Spring Azure Application
 
-The following document documents my experience with building and deploying a Spring Boot (`3.0`) application to
+The following document describes my experience with building and deploying a Spring Boot (`3.0`) application to
 Microsoft Azure, using the cloud provider's https://learn.microsoft.com/en-us/azure/app-service/overview[App Service].
 
 *DAY 0*:
 
 After reading the https://learn.microsoft.com/en-us/azure/app-service/overview[App Service overview], I then read
-the Quickstart article on
-https://learn.microsoft.com/en-us/azure/app-service/quickstart-java?tabs=javase&pivots=platform-linux-development-environment-maven["Creating a Java app on Azure App Service"],
-using Maven on Linux.
+the Quickstart article on https://learn.microsoft.com/en-us/azure/app-service/quickstart-java?tabs=javase&pivots=platform-linux-development-environment-maven["Creating a Java app on Azure App Service"],
+running in Linux using Maven.
 
 This led me to https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-macos[install the Azure CLI]
 as well as https://learn.microsoft.com/en-us/azure/app-service/quickstart-java?tabs=javase&pivots=platform-linux-development-environment-maven#3---configure-the-maven-plugin[configure the Azure Webapps Maven Plugin].
@@ -39,42 +38,42 @@ A web browser has been opened at https://login.microsoftonline.com/organizations
 ]
 ----
 
-> NOTE: After running `$ mvn com.microsoft.azure:azure-webapp-maven-plugin:2.5.0:config`, I was really not certain about
+> NOTE: After running `$ mvn com.microsoft.azure:azure-webapp-maven-plugin:2.5.0:config`, I was uncertain about
 the `<region>` (default is "_centralus_") or `<pricingTier>` (default is "_P1v2_") to select, so I changed both
-of these values  to "westus" (since I reside in the Western US) and "f1" (for "Free").
+of these values  to "_westus_" (since I reside in the Western US) and "F1" (for "_Free_").
 
 The following build plugin configuration was added to my Maven project POM file:
 
 [source,xml]
 ----
-			<plugin>
-				<groupId>com.microsoft.azure</groupId>
-				<artifactId>azure-webapp-maven-plugin</artifactId>
-				<version>${microsoft-azure-webapp-maven-plugin.version}</version>
-				<configuration>
-					<schemaVersion>v2</schemaVersion>
-					<subscriptionId>xxxxx</subscriptionId>
-					<resourceGroup>SpringAppsResourceGroup</resourceGroup>
-					<appName>hello-spring-app</appName>
-					<pricingTier>F1</pricingTier>
-					<region>eastus</region>
-					<runtime>
-						<os>Linux</os>
-						<javaVersion>Java 17</javaVersion>
-						<webContainer>Java SE</webContainer>
-					</runtime>
-					<deployment>
-						<resources>
-							<resource>
-								<directory>${project.basedir}/target</directory>
-								<includes>
-									<include>*.jar</include>
-								</includes>
-							</resource>
-						</resources>
-					</deployment>
-				</configuration>
-			</plugin>
+<plugin>
+    <groupId>com.microsoft.azure</groupId>
+    <artifactId>azure-webapp-maven-plugin</artifactId>
+    <version>${microsoft-azure-webapp-maven-plugin.version}</version>
+    <configuration>
+        <schemaVersion>v2</schemaVersion>
+        <subscriptionId>xxxxx</subscriptionId>
+        <resourceGroup>SpringAppsResourceGroup</resourceGroup>
+        <appName>hello-spring-app</appName>
+        <pricingTier>F1</pricingTier>
+        <region>eastus</region>
+        <runtime>
+            <os>Linux</os>
+            <javaVersion>Java 17</javaVersion>
+            <webContainer>Java SE</webContainer>
+        </runtime>
+        <deployment>
+            <resources>
+                <resource>
+                    <directory>${project.basedir}/target</directory>
+                    <includes>
+                        <include>*.jar</include>
+                    </includes>
+                </resource>
+            </resources>
+        </deployment>
+    </configuration>
+</plugin>
 ----
 
 I chose not to deploy my Spring Boot app at this time.
@@ -85,13 +84,14 @@ beginning with the https://learn.microsoft.com/en-us/azure/spring-apps/overview[
 Anxious to get started (quickly), I then jumped into
 the https://learn.microsoft.com/en-us/azure/spring-apps/quickstart?tabs=Azure-CLI["Quickstart: Deploy your first application to Azure Spring Apps"].
 
-Ugh! I could not get anywhere with the Microsoft Azure Account/Subscription using "*robertm*". So, I signed up
-for a Free Microsoft Azure Account using the Free Trial (30-days + $200 USD); #sigh.
+Ugh! I was unable to proceed with the Microsoft Azure Account/Subscription using "*robertm*" due to permission issues
+and other limitations (quotas). So, I signed up for a Free Microsoft Azure Account using the Free Trial
+(30-days + $200 USD).
 
-After finally getting signed up, I tried to create an "Azure Spring Apps" service. This led to pricing,
-that had me concerned: ~$221.45 / month. Ah, NO!
+After finally getting signed up and a subcriptions (which sent me down redirect hell), I finally tried to create
+an "_Azure Spring Apps_" service. This led to pricing, that had me concerned: ~$221.92 / month just for "_Basic_". :(
 
-I tried to "Create Web App". This was a painful experience!
+So, I resorted to "_Create Web App_". This was a unproductive experience with a lot of trial and error!
 
 First, it would not let me select Region (West US) based on my SKU (F1 - Free?):
 
@@ -107,14 +107,14 @@ First, it would not let me select Region (West US) based on my SKU (F1 - Free?):
 }
 ----
 
-Apparently, even though I reside on the West coast, I can only create a new Webapp on the East coast using the Region,
-"East US". WTF! o.O
+Fortunately the error message was somewhat helpful. Apparently, even though I reside on the West coast,
+I can only create a new Webapp on the East coast using the Region, "East US". o.O
 
 Anyway...
 
 After my first, unsuccessful attempt at deploying my Spring Boot app using the Azure Webapp Maven Plugin, I had to
-manually delete the app, then the Resource, create the Resource Group (SpringAppsRxGrp), then simply deploy the app
-using the Azure Webapp Maven Plugin:
+manually delete the app, then the Resource Group, recreate the Resource Group (`SpringAppsRxGrp`), then simply deploy
+the app using the Azure Webapp Maven Plugin:
 
 [source,txt]
 ----
@@ -162,7 +162,8 @@ Username: jblum0@gmail.com
 [INFO] ------------------------------------------------------------------------
 ----
 
-After a long duration (:P), I was able to finally access my Spring Boot app in the Microsoft Azure cloud at:
+After several failed attempts and a quite lengthy duration (:P), I was able to finally access my Spring Boot app
+in the Microsoft Azure cloud at:
 
 https://hello-spring-app.azurewebsites.net/hello/John
 
