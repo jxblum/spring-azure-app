@@ -1,0 +1,169 @@
+[[spring-azure-app]]
+= Spring Azure Application
+
+The following document documents my experience with building and deploying a Spring Boot (`3.0`) application to
+Microsoft Azure, using the cloud provider's https://learn.microsoft.com/en-us/azure/app-service/overview[App Service].
+
+*DAY 0*:
+
+After reading the https://learn.microsoft.com/en-us/azure/app-service/overview[App Service overview], I then read
+the Quickstart article on
+https://learn.microsoft.com/en-us/azure/app-service/quickstart-java?tabs=javase&pivots=platform-linux-development-environment-maven["Creating a Java app on Azure App Service"],
+using Maven on Linux.
+
+This led me to https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-macos[install the Azure CLI]
+as well as https://learn.microsoft.com/en-us/azure/app-service/quickstart-java?tabs=javase&pivots=platform-linux-development-environment-maven#3---configure-the-maven-plugin[configure the Azure Webapps Maven Plugin].
+
+I was able to successfully login:
+
+[source,txt]
+----
+$ az login
+
+A web browser has been opened at https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize. Please continue the login in the web browser. If no web browser is available or if the web browser fails to open, use device code flow with `az login --use-device-code`.
+[
+  {
+    "cloudName": "AzureCloud",
+    "homeTenantId": "xxxxxd62f0",
+    "id": "xxxxx1b5ad",
+    "isDefault": true,
+    "managedByTenants": [],
+    "name": "robertm",
+    "state": "Enabled",
+    "tenantId": "xxxxxd62f0",
+    "user": {
+      "name": "jblum@xxxxx.xxx",
+      "type": "user"
+    }
+  }
+]
+----
+
+> NOTE: After running `$ mvn com.microsoft.azure:azure-webapp-maven-plugin:2.5.0:config`, I was really not certain about
+the `<region>` (default is "_centralus_") or `<pricingTier>` (default is "_P1v2_") to select, so I changed both
+of these values  to "westus" (since I reside in the Western US) and "f1" (for "Free").
+
+The following build plugin configuration was added to my Maven project POM file:
+
+[source,xml]
+----
+			<plugin>
+				<groupId>com.microsoft.azure</groupId>
+				<artifactId>azure-webapp-maven-plugin</artifactId>
+				<version>${microsoft-azure-webapp-maven-plugin.version}</version>
+				<configuration>
+					<schemaVersion>v2</schemaVersion>
+					<subscriptionId>xxxxx</subscriptionId>
+					<resourceGroup>SpringAppsResourceGroup</resourceGroup>
+					<appName>hello-spring-app</appName>
+					<pricingTier>F1</pricingTier>
+					<region>eastus</region>
+					<runtime>
+						<os>Linux</os>
+						<javaVersion>Java 17</javaVersion>
+						<webContainer>Java SE</webContainer>
+					</runtime>
+					<deployment>
+						<resources>
+							<resource>
+								<directory>${project.basedir}/target</directory>
+								<includes>
+									<include>*.jar</include>
+								</includes>
+							</resource>
+						</resources>
+					</deployment>
+				</configuration>
+			</plugin>
+----
+
+I chose not to deploy my Spring Boot app at this time.
+
+Instead, I went on to read the https://learn.microsoft.com/en-us/azure/spring-apps/[Azure Spring Apps documentation],
+beginning with the https://learn.microsoft.com/en-us/azure/spring-apps/overview[Overview].
+
+Anxious to get started (quickly), I then jumped into
+the https://learn.microsoft.com/en-us/azure/spring-apps/quickstart?tabs=Azure-CLI["Quickstart: Deploy your first application to Azure Spring Apps"].
+
+Ugh! I could not get anywhere with the Microsoft Azure Account/Subscription using "*robertm*". So, I signed up
+for a Free Microsoft Azure Account using the Free Trial (30-days + $200 USD); #sigh.
+
+After finally getting signed up, I tried to create an "Azure Spring Apps" service. This led to pricing,
+that had me concerned: ~$221.45 / month. Ah, NO!
+
+I tried to "Create Web App". This was a painful experience!
+
+First, it would not let me select Region (West US) based on my SKU (F1 - Free?):
+
+[source,text]
+----
+{"code":"InvalidTemplateDeployment","details":[
+{
+    "code":"ValidationForResourceFailed",
+    "message":"Validation failed for a resource. Check 'Error.Details[0]' for more information.",
+    "details":[{"code":"SubscriptionIsOverQuotaForSku",
+    "message":"This region has quota of 0 instances for your subscription. Try selecting different region or SKU."}]}],
+    "message":"The template deployment 'Microsoft.Web-WebApp-Portal-10ae4c44-a08e' is not valid according to the validation procedure. The tracking id is 'b8a10427-5669-4f46-b4d4-15f0977998b0'. See inner errors for details."
+}
+----
+
+Apparently, even though I reside on the West coast, I can only create a new Webapp on the East coast using the Region,
+"East US". WTF! o.O
+
+Anyway...
+
+After my first, unsuccessful attempt at deploying my Spring Boot app using the Azure Webapp Maven Plugin, I had to
+manually delete the app, then the Resource, create the Resource Group (SpringAppsRxGrp), then simply deploy the app
+using the Azure Webapp Maven Plugin:
+
+[source,txt]
+----
+$ mvn package azure-webapp:deploy
+[INFO] Scanning for projects...
+[INFO]
+[INFO] --------------------< io.example:spring-azure-app >---------------------
+[INFO] Building spring-azure-app 0.1.0-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO]
+...
+..
+.
+[INFO] --- azure-webapp-maven-plugin:2.8.0:deploy (default-cli) @ spring-azure-app ---
+[INFO] Auth type: AZURE_CLI
+Default subscription: Azure subscription 1(fc1f3146-ead7-419e-a87e-d89292ae6a02)
+Username: jblum0@gmail.com
+[INFO] Subscription: Azure subscription 1(fc1f3146-ead7-419e-a87e-d89292ae6a02)
+[INFO] Start creating App Service plan (asp-hello-spring-app)...
+[INFO] App Service plan (asp-hello-spring-app) is successfully created
+[INFO] Start creating Web App(hello-spring-app)...
+[INFO] Web App(hello-spring-app) is successfully created
+[INFO] Trying to deploy external resources to hello-spring-app...
+[INFO] Successfully deployed the resources to hello-spring-app
+[INFO] Trying to deploy artifact to hello-spring-app...
+[INFO] Deploying (/Users/jblum/pivdev/spring-examples/spring-azure-app/target/spring-azure-app-0.1.0-SNAPSHOT.jar)[jar]  ...
+[WARNING] [id: 0xb9e462a2, L:/10.99.199.19:62576 - R:hello-spring-app.scm.azurewebsites.net/20.119.8.31:443] Last write attempt timed out; force-closing the connection.
+[INFO] Deployment Status: BuildSuccessful; Successful Instance Count: 0; In-progress Instance Count: 0; Failed Instance Count: 0
+[INFO] Deployment Status: RuntimeStarting; Successful Instance Count: 0; In-progress Instance Count: 1; Failed Instance Count: 0
+[INFO] Deployment Status: RuntimeStarting; Successful Instance Count: 0; In-progress Instance Count: 1; Failed Instance Count: 0
+[INFO] Deployment Status: RuntimeStarting; Successful Instance Count: 0; In-progress Instance Count: 1; Failed Instance Count: 0
+[INFO] Deployment Status: RuntimeStarting; Successful Instance Count: 0; In-progress Instance Count: 1; Failed Instance Count: 0
+[INFO] Deployment Status: RuntimeStarting; Successful Instance Count: 0; In-progress Instance Count: 1; Failed Instance Count: 0
+[INFO] Deployment Status: RuntimeStarting; Successful Instance Count: 0; In-progress Instance Count: 1; Failed Instance Count: 0
+[INFO] Deployment Status: RuntimeStarting; Successful Instance Count: 0; In-progress Instance Count: 1; Failed Instance Count: 0
+[INFO] Deployment Status: RuntimeStarting; Successful Instance Count: 0; In-progress Instance Count: 1; Failed Instance Count: 0
+[INFO] Deployment Status: RuntimeStarting; Successful Instance Count: 0; In-progress Instance Count: 1; Failed Instance Count: 0
+[INFO] Deployment Status: RuntimeSuccessful; Successful Instance Count: 1; In-progress Instance Count: 0; Failed Instance Count: 0
+[INFO] Successfully deployed the artifact to https://hello-spring-app.azurewebsites.net
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  03:36 min
+[INFO] Finished at: 2023-01-30T17:23:42-08:00
+[INFO] ------------------------------------------------------------------------
+----
+
+After a long duration (:P), I was able to finally access my Spring Boot app in the Microsoft Azure cloud at:
+
+https://hello-spring-app.azurewebsites.net/hello/John
+
+It's a miracle!
