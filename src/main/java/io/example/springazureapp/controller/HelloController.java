@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @SuppressWarnings("unused")
 public class HelloController {
 
-	private static final String DEFAULT_USERNAME = "'whoever the hell you are'!";
+	private static final String DEFAULT_USERNAME = "World";
 
 	private static final String FONT_FAMILY_ARIAL = "'Arial'";
 	private static final String FONT_FAMILY_BRUSH_SCRIPT_MT_CURSIVE = "'Brush Script MT', cursive";
