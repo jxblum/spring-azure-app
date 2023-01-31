@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
- * Spring Web MVC {{@link Controller} used to greet the user.
+ * Spring Web MVC {@link Controller} used to greet the user.
  *
  * @author John Blum
  * @see org.springframework.stereotype.Controller
